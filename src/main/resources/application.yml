@@ -26,3 +26,5 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: method
+    default-models-expand-depth: -1
+    filter: true
