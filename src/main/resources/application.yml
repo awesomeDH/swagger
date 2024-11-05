@@ -6,6 +6,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
 #logging:
 #  level:
@@ -18,7 +22,7 @@ springdoc:
   api-docs:
     path: /v3/api-docs  # API Docs 경로
   swagger-ui:
-    path: /apiDocs/
+    path: /api-docs/
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: method

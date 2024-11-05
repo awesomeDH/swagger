@@ -1,5 +1,6 @@
 package com.heeda.swagger.common.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.validation.BindingResult;
@@ -9,8 +10,12 @@ import java.util.List;
 
 @Builder
 @Getter
+@Schema(name = "ErrorResponse")
 public class ErrorResponse {
+    @Schema(description = "에러 코드")
     private String code;
+
+    @Schema(description = "에러 메시지")
     private String message;
 
     public static ErrorResponse of(String errorCode, String errorMessage) {

@@ -19,10 +19,11 @@ import java.time.LocalDateTime;
 public class BaseEntity {
     @Setter
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(name="createdAt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
+    @Column(name="updatedAt")
     private LocalDateTime updatedAt;
 
     @PrePersist
