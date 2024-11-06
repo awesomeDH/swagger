@@ -1,10 +1,10 @@
 package com.heeda.swagger.config;
 
-import com.heeda.swagger.common.annotation.CommonErrorResponseExample;
 import com.heeda.swagger.common.annotation.CommonErrorResponseExamples;
 import com.heeda.swagger.common.constant.ErrorCode;
 import com.heeda.swagger.common.dto.response.CommonErrorResponse;
 import com.heeda.swagger.common.dto.response.ErrorResponse;
+import com.heeda.swagger.common.dto.response.ExampleHolder;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Operation;
@@ -24,7 +24,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.HandlerMethod;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Configuration
@@ -55,47 +57,53 @@ public class SwaggerConfig {
             if (commonErrorResponseExamples != null) {
                 generateErrorCodeResponseExample(operation, commonErrorResponseExamples.value());
             }
-            else
-            {
-                CommonErrorResponseExample commonErrorResponseExample = handlerMethod.getMethodAnnotation(CommonErrorResponseExample.class);
-                // @CommonErrorResponseExample 어노테이션이 붙어있다면
-                if (commonErrorResponseExample != null) {
-                    generateErrorCodeResponseExample(operation, new CommonErrorResponseExample[]{commonErrorResponseExample});
-                }
-            }
             return operation;
         };
     }
 
-    private void generateErrorCodeResponseExample(Operation operation, CommonErrorResponseExample[] commonErrorResponseExamples)
-    {
-        ApiResponses apiResponses = new ApiResponses();
+    private void generateErrorCodeResponseExample(Operation operation, ErrorCode[] errorCodes) {
+        ApiResponses responses = operation.getResponses();
 
-        Arrays.stream(commonErrorResponseExamples).forEach(
-                (example) -> {
-                    Content content = new Content();
-                    MediaType mediaType = new MediaType();
-                    ApiResponse apiResponse = new ApiResponse();
+        // ExampleHolder 객체 생성 및 에러 코드별 그룹화
+        Map<Integer, List<ExampleHolder>> statusWithExampleHolders = Arrays.stream(errorCodes)
+                .map(
+                        errorCode -> ExampleHolder.builder()
+                                .holder(getSwaggerExample(errorCode))
+                                .code(errorCode.getHttpStatus().value())
+                                .name(errorCode.name())
+                                .build()
+                )
+                .collect(Collectors.groupingBy(ExampleHolder::getCode));
 
-                    mediaType.addExamples(example.error().getErrorCode(), getSwaggerExample(example.statusCode(), example.error()));
-                    content.addMediaType("application/json", mediaType);
-                    apiResponse.content(content);
-                    apiResponses.addApiResponse(String.valueOf(example.statusCode()), apiResponse);
-                }
-        );
+        addExamplesToResponses(responses, statusWithExampleHolders);
 
-        ApiResponses existingResponses = operation.getResponses();
-        apiResponses.forEach(existingResponses::addApiResponse);
-        operation.setResponses(existingResponses);
-
+        operation.setResponses(responses);
     }
 
-    private Example getSwaggerExample(int statusCode, ErrorCode error)
+
+    private void addExamplesToResponses(ApiResponses responses, Map<Integer, List<ExampleHolder>> statusWithExampleHolders) {
+        statusWithExampleHolders.forEach((statusCode, examples) -> {
+            ApiResponse apiResponse = new ApiResponse();
+            Content content = new Content();
+            MediaType mediaType = new MediaType();
+
+            examples.forEach(exampleHolder ->
+                    mediaType.addExamples(exampleHolder.getName(), exampleHolder.getHolder())
+            );
+
+            content.addMediaType("application/json", mediaType);
+            apiResponse.setContent(content);
+            responses.addApiResponse(String.valueOf(statusCode), apiResponse);
+        });
+    }
+
+
+    private Example getSwaggerExample(ErrorCode error)
     {
         ErrorResponse errorResponse = ErrorResponse.of(error.getErrorCode(), error.getMessage());
-        CommonErrorResponse<Object> response= CommonErrorResponse.ERROR(statusCode, errorResponse);
+        CommonErrorResponse<Object> response= CommonErrorResponse.ERROR(error.getHttpStatus().value(), errorResponse);
         Example example = new Example();
-        example.setSummary("Error example");
+        example.setSummary(response.getError().getCode());
         example.setValue(Map.of(
                 "success", response.isSuccess(),
                 "message", response.getMessage(),

@@ -1,6 +1,5 @@
 package com.heeda.swagger.domain.user.controller;
 
-import com.heeda.swagger.common.annotation.CommonErrorResponseExample;
 import com.heeda.swagger.common.annotation.CommonErrorResponseExamples;
 import com.heeda.swagger.common.constant.ErrorCode;
 import com.heeda.swagger.common.dto.response.CommonResponse;
@@ -50,9 +49,7 @@ public class UserController {
         return CommonResponse.OK();
     }
 
-    @CommonErrorResponseExamples(
-            @CommonErrorResponseExample(statusCode = 404,  error = ErrorCode.USER_NOT_FOUND)
-    )
+    @CommonErrorResponseExamples({ErrorCode.USER_NOT_FOUND})
     @Operation(summary = "유저 상세", description = "유저 상세 정보를 조회합니다.")
     @GetMapping("/{userUID}")
     public CommonResponse<UserResponse> getDetailedUserInfo(
